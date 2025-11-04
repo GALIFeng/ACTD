@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 from tqdm import tqdm
-from Recon.kaczmarzReg_cheb import kaczmarz_tensor_cheb
+from Recon.kaczmarzReg_cheb import kaczmarz_tensor_cheb,kaczmarz_tensor
 from ACTD import ACTD_optimization,tensor_cheb_transform
 
 from utils.DataProcess import normalize,denormalize_core
@@ -77,7 +77,22 @@ if __name__ == "__main__":
     # S_completed = tensor_cheb_transform(S_completed_cheb, Core_shape, S0_shape)
     # S_completed_HR = tensor_cheb_transform(S_completed_cheb, Core_shape, S0_shape, scale=scale)
 
-    # 进行Kaczmarz重建
+
+    # # 进行Kaczmarz重建
+    # C = kaczmarz_tensor(
+    #     S_completed, u,
+    #     iterations=3,
+    #     lambd=0.75,
+    #     enforceReal=False,
+    #     enforcePositive=True,
+    #     shuffle=True,
+    #     tv_iters=1,
+    #     dt=0.1,
+    #     eps=1,
+    # ).real
+
+    
+    # 进行Kaczmarz_cheb重建
     C = kaczmarz_tensor_cheb(
         S_completed_cheb, u,
         Core_shape=Core_shape,
