@@ -94,3 +94,63 @@ def kaczmarz_tensor_cheb(S, U,
         # 3. 应用 TV 正则化并更新 C 以用于下一次迭代
         C = TV3D(C, tv_iters, dt, eps)
     return C
+
+
+
+
+def kaczmarz_tensor(S, U,
+                        iterations = 3,
+                        lambd = 0.0,
+                        enforceReal = False,
+                        enforcePositive = False,
+                        shuffle = True,
+                        tv_iters=1,
+                        dt=0.1,
+                        eps=1):
+    """
+    Tensor-form Kaczmarz with Tikhonov and TV regularization.
+
+    Args:
+      S: ndarray, shape (Nf, Nx, Ny, Nz)
+      U: ndarray, shape (Nf,)
+      C0: initial tensor (Nx,Ny,Nz)
+      lambd: Tikhonov weight
+      tv_weight: TV regularization weight
+      tv_iters: TV iterations per slice
+    """
+    # 预先计算每个切片的能量
+    energy = computeSliceEnergy(S)
+    Nf, Nx, Ny, Nz = S.shape
+    idx = np.arange(Nf)
+    # initialize C and residual
+    dtype = S.dtype if np.iscomplexobj(S) else np.complex128
+    C = np.zeros((Nx, Ny, Nz), dtype=dtype)
+    rho = np.zeros(Nf, dtype=dtype)
+
+    for it in range(iterations):
+        if shuffle:
+            np.random.shuffle(idx)
+        # Kaczmarz updates
+        for f in idx:
+            C = C.astype(dtype)  # Ensure C is in the correct dtype
+            E = energy[f]
+            if E == 0: continue
+            inner = np.tensordot(S[f], C, axes=3)
+            rf = U[f] - inner
+            beta = (rf - np.sqrt(lambd)*rho[f])/(E*E + lambd)
+            C += beta * S[f].conjugate()
+            rho[f] += np.sqrt(lambd)*beta
+
+        # enforce constraints
+        if enforceReal:
+            C = C.real.astype(dtype)
+        if enforcePositive:
+            C = np.maximum(C.real, 0).astype(dtype)
+
+        # TV regularization: denoise each 2D slice
+        C_real = C.real
+        # 直接对整个三维体调用 TV3D
+        C = TV3D(C_real, tv_iters, dt, eps)
+        
+    return C
+
