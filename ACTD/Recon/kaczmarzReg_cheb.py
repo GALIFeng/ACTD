@@ -147,7 +147,6 @@ def kaczmarz_tensor(S, U,
         if enforcePositive:
             C = np.maximum(C.real, 0).astype(dtype)
 
-        # TV regularization: denoise each 2D slice
         C_real = C.real
         # 直接对整个三维体调用 TV3D
         C = TV3D(C_real, tv_iters, dt, eps)
